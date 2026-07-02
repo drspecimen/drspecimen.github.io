@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samson Seun Ishola — R&D, Business Analytics, AI/ML Engineering</title>
+<meta name="description" content="Samson Seun Ishola — Research & Development professional and AI/ML Engineer. Building data-driven systems including SportSense, DIG InfraCore, and the DIG Platform.">
+<meta property="og:title" content="Samson Ishola — R&D & AI/ML Engineering">
+<meta property="og:description" content="Research that ships as working systems. Analytics, platform builds, and AI-integrated tools from Lagos, Nigeria.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/writing.css">
+</head>
+<body>
+
+<!-- TECHNICAL WRITING -->
+<section class="section" id="writing">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-tag">03 — Technical Notes</div>
+      <h2>Build logs &amp; write-ups</h2>
+      <p>Detailed write-ups of selected builds — architecture decisions, problems encountered, and how they were solved.</p>
+    </div>
+
+    <div class="writing-list">
+
+      <!-- Entry 1 — DIG InfraCore -->
+      <article class="writing-entry" id="note-infracore">
+        <button class="writing-toggle" onclick="toggleWriting('note-infracore')" aria-expanded="false">
+          <div class="wt-left">
+            <span class="wt-date">June 2026</span>
+            <span class="wt-tag">Infrastructure · NW.js</span>
+          </div>
+          <div class="wt-title">
+            DIG InfraDash: Building a Unified Infrastructure Monitor From a Single Recurring Fault
+          </div>
+          <div class="wt-chevron"><i class="bi bi-chevron-down"></i></div>
+        </button>
+
+        <div class="writing-body" id="note-infracore-body" hidden>
+          <div class="writing-content">
+            <h3>NETWORK MONITOR (INFRADASH)</h3>
+            <p>
+              Troubleshooting a recurring fault on a Socomec Delphys Green 2.0 UPS
+		where its network management card would silently lose its web interface every few hours, 
+		while still responding to ping, with the only recovery path being a manual Telnet session to force-restart the agent. 
+		Diagnosing that single device exposed a much larger need, 
+		existence of a single place to see the health of all connected infrastructure at once 
+		and a historical record of downtime to support escalation with vendors.
+
+		Some Organizations running physical infrastructure, including data centers, and server rooms, 
+		typically rely on a patchwork of web interfaces with no centralized visibility. 
+            </p>
+
+
+            <h3>This creates several recurring operational issues:</h3>
+            <ul>
+              <li>No single dashboard to see which devices are online, degraded, or offline at a glance,</li>
+              <li>No historical uptime data to support root-cause analysis or vendor escalation,</li>
+              <li>Browser-based dashboard approaches are fragile in practice,
+		 cross-origin restrictions and iframe security policies block full navigation into vendor login pages and multi-step interfaces, 
+		which means an embedded dashboard often cannot actually drive the underlying device, and</li>
+              <li>No lightweight, low-cost way to deploy a monitoring layer without committing to expensive enterprise DCIM platforms</li>
+            </ul>
+
+            <p>
+              That need became the starting point for InfraDash. 
+            </p>
+
+		
+            <h3>Scoped around fouz core objectives:</h3>
+            <ol>
+              <li>Build a single desktop application that consolidates access to multiple infrastructure web interfaces, 
+		including UPS, CCTV, and environmental sensors, with the ability to extend to any future IP-based system.</li>
+              <li>Provide continuous uptime monitoring with historical visualisation, not just a point-in-time status check.</li>
+              <li>Guarantee full, unrestricted browser-grade navigation into each device's native web interface, 
+		solving the iframe and cross-origin limitations that break most lightweight dashboard approaches.</li>
+            </ol>
+
+
+            <h3>Design and Architecture</h3>
+            <p>
+              The first prototype used HTML iframes to embed device interfaces inside a browser dashboard. 
+		This failed quickly and instructively: most embedded systems enforce frame-blocking policies and block iframe navigation outright, 
+		meaning a login page might load but subsequent navigation, 
+		such as clicking into a UPS configuration menu or following a CCTV login redirect, 
+		simply would not work. This was the key design lesson of the project: 
+		a monitoring dashboard for real hardware needs a real browser engine per device, not a sandboxed iframe.
+		That led to a deliberate architectural pivot toward a desktop application built on NW.js, using a native embedded browser tag that runs a full, 
+		isolated Chromium instance per connected device. This single decision solved the navigation problem completely. CCTV redirects, multi-step UPS configuration menus, 
+		and authentication flows now behave exactly as they would in a standalone browser tab, regardless of vendor. 
+            </p>
+
+
+            <h3>Core components implemented:</h3>
+            <ul>
+              <li>Tabbed device sessions, where each device opens in its own persistent tab with full page state preserved and instantly switchable,</li>
+              <li>Live ping-based health monitoring, with a background process polling every registered device at a configurable interval and logging uptime and downtime events with timestamps,</li>
+              <li>A dashboard analytics layer showing aggregate stats such as online and offline counts, average uptime, category breakdown, a 24-hour uptime visualisation per device, and a recent events feed,</li>
+              <li>An auto-rotate display mode that cycles through all open device tabs at a configurable interval, designed for use on a wall-mounted operations-style monitor,</li>
+              <li>A full-view kiosk mode with an integrated screen wake lock, which removes all interface chrome and prevents the display from sleeping, allowing the dashboard to run unattended on a dedicated screen,</li>
+              <li>A built-in CLI terminal panel, styled after a code editor's integrated terminal, offering direct ping, traceroute, ipconfig, and arbitrary command access per device,</li>
+              <li>A white-label branding system allowing organisation name, window title, 
+		and logo to be fully edited from within the application, including a live-updating taskbar and window icon, 
+		with no source code access required, alongside a factory reset option to return the application to a clean default state, and</li>
+              <li>Persistent local storage for device lists, uptime history, and configuration, with export and import support for backup or migration between machines.</li>
+            </ul>
+
+
+            <h3>Implementation</h3>
+            <p>
+              The application is built entirely in HTML, CSS, and JavaScript, running inside NW.js, 
+		which provides direct Node.js access from within the application itself. 
+		This enables native operating system interaction, including process spawning for the terminal, 
+		system calls for the screen wake lock, and file system access for persistent configuration, 
+		without requiring a separate backend server. The entire stack is self-contained in a single distributable folder, 
+		with no external dependencies or internet access required at runtime.
+		For distribution, the application is packaged using Inno Setup into a standard Windows installer, 
+		allowing staff to install it like any commercial desktop application, complete with Start Menu and desktop shortcuts. 
+            </p>
+
+
+            <!-- Screenshot placeholder — replace src with real screenshot -->
+            <div class="screenshot-grid">
+              <div class="screenshot-placeholder">
+                <i class="bi bi-display"></i>
+                <span>Dashboard screenshot</span>
+                <small>Add screenshot: assets/img/infracore-dashboard.png</small>
+              </div>
+              <div class="screenshot-placeholder">
+                <i class="bi bi-bell"></i>
+                <span>Alert panel</span>
+                <small>Add screenshot: assets/img/infracore-alerts.png</small>
+              </div>
+            </div>
+
+
+            <h3>Deployment</h3>
+            <p>
+              The tool is currently deployed for internal infrastructure monitoring. 
+		The architecture is intentionally general-purpose: any IP-addressable device with a web interface, 
+		including IoT devices, network switches, routers, firewalls, printers, and access control systems, 
+		can be added through the interface without any code changes, 
+		making it suitable for branch network monitoring as well as data centre and server room use cases. 
+            </p>
+
+	    
+            <div class="writing-tags">
+              <span>NW.js</span><span>Node.js</span><span>Infrastructure</span>
+              <span>Banking</span><span>Desktop App</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Entry 2 — DIG LMS -->
+      <article class="writing-entry" id="note-lms">
+        <button class="writing-toggle" onclick="toggleWriting('note-lms')" aria-expanded="false">
+          <div class="wt-left">
+            <span class="wt-date">July 2026</span>
+            <span class="wt-tag">LMS · PHP · Payments</span>
+          </div>
+          <div class="wt-title">
+            Building a tutor marketplace LMS on PHP — from registration to certificate PDF
+          </div>
+          <div class="wt-chevron"><i class="bi bi-chevron-down"></i></div>
+        </button>
+
+        <div class="writing-body" id="note-lms-body" hidden>
+          <div class="writing-content">
+            <h3>Scope</h3>
+            <p>
+              The DIG Courses module adds a full learning management system to
+              the DIG Platform — tutor registration with admin approval, a
+              drag-and-drop course builder, student enrollment with Paystack
+              payment handling, lesson progress tracking, assignment submissions,
+              discussion forums per course, and certificate generation as a
+              signed PDF.
+            </p>
+
+            <h3>The enrollment isolation problem</h3>
+            <p>
+              An early version of the system used a browser cookie keyed only
+              by <code>course_id</code> to track enrollment. This meant that if
+              two students used the same browser on the same device, the second
+              student would see the first student's progress, completion status,
+              and certificate — including the wrong name on the certificate.
+              The fix was to remove cookie-based enrollment detection entirely
+              from all page-render files and scope every lookup to the logged-in
+              student's session email: <code>WHERE course_id = :cid AND student_email = :email</code>.
+            </p>
+
+            <h3>Certificate generation</h3>
+            <p>
+              Certificates are generated as A4 landscape PDFs using DOMPDF.
+              The template embeds: the student's name, course title, issue date,
+              a unique credential ID, the tutor's drawn signature (captured as
+              a base64 PNG from a canvas pad in the tutor dashboard), and the
+              DIG founder signature. All images are embedded as base64 data URIs
+              so DOMPDF doesn't need HTTP access. The PHP GD extension is
+              required — a dependency that's easy to miss on fresh XAMPP setups.
+            </p>
+
+            <h3>Commission tracking</h3>
+            <p>
+              When a paid course sells, the platform records the gross amount,
+              the DIG platform fee (configurable in admin settings), and the
+              tutor's cut in a <code>tutor_earnings</code> table. Admins can
+              review per-tutor balances, see bank details, and mark payouts as
+              completed. A key bug fixed during build: <code>getSetting()</code>
+              returns an empty string for missing keys, not <code>null</code>,
+              so using <code>??</code> instead of <code>?:</code> caused the
+              commission rate to silently evaluate to 0%.
+            </p>
+
+            <div class="screenshot-grid">
+              <div class="screenshot-placeholder">
+                <i class="bi bi-mortarboard"></i>
+                <span>Course builder</span>
+                <small>Add screenshot: assets/img/lms-builder.png</small>
+              </div>
+              <div class="screenshot-placeholder">
+                <i class="bi bi-award"></i>
+                <span>Certificate PDF output</span>
+                <small>Add screenshot: assets/img/lms-cert.png</small>
+              </div>
+            </div>
+
+            <div class="writing-tags">
+              <span>PHP 8.2</span><span>MySQL</span><span>DOMPDF</span>
+              <span>Paystack</span><span>LMS</span><span>Certificate Generation</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Add more entries here — template below -->
+      <!--
+      <article class="writing-entry" id="note-YOUR-ID">
+        <button class="writing-toggle" onclick="toggleWriting('note-YOUR-ID')" aria-expanded="false">
+          <div class="wt-left">
+            <span class="wt-date">Month Year</span>
+            <span class="wt-tag">Topic · Stack</span>
+          </div>
+          <div class="wt-title">Your title here</div>
+          <div class="wt-chevron"><i class="bi bi-chevron-down"></i></div>
+        </button>
+        <div class="writing-body" id="note-YOUR-ID-body" hidden>
+          <div class="writing-content">
+            <h3>Section</h3>
+            <p>Content here.</p>
+            <div class="screenshot-grid">
+              <div class="screenshot-placeholder">
+                <i class="bi bi-image"></i>
+                <span>Label</span>
+                <small>assets/img/filename.png</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+      -->
+
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section" id="contact">
+  <div class="container">
+    <div class="contact-panel">
+      <div>
+        <h2>Have a research or build problem worth solving?</h2>
+        <p>
+          I take on a limited number of analytics, research, and platform
+          engagements at a time. If what you need looks like the work above,
+          reach out directly.
+        </p>
+      </div>
+      <div class="contact-list">
+        <div class="contact-row">
+          <span class="k">Email</span>
+          <a class="v" href="mailto:isholanthonysamson@gmail.com">isholanthonysamson@gmail.com</a>
+        </div>
+        <div class="contact-row">
+          <span class="k">Phone</span>
+          <a class="v" href="tel:+2348106692300">+234 810 669 2300</a>
+        </div>
+        <div class="contact-row">
+          <span class="k">Location</span>
+          <span class="v">Lagos, Nigeria</span>
+        </div>
+        <div class="contact-row">
+          <span class="k">DIG Platform</span>
+          <a class="v" href="https://drspecimen.online" target="_blank" rel="noopener">drspecimen.online ↗</a>
+        </div>
+        <div class="contact-row">
+          <span class="k">GitHub</span>
+          <a class="v" href="https://github.com/drspecimen" target="_blank" rel="noopener">github.com/drspecimen ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-inner">
+      <small>&copy; <span id="year"></span> Samson Ishola. Built and maintained independently.</small>
+      <div class="footer-links">
+        <a href="mailto:isholanthonysamson@gmail.com">Email</a>
+        <a href="https://drspecimen.online" target="_blank" rel="noopener">DIG Platform</a>
+        <a href="https://github.com/drspecimen" target="_blank" rel="noopener">GitHub</a>
+        <a href="#top">Back to top</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+<script>
+function toggleWriting(id) {
+  const article = document.getElementById(id);
+  const body    = document.getElementById(id + '-body');
+  const btn     = article.querySelector('.writing-toggle');
+  const icon    = btn.querySelector('.wt-chevron i');
+  const isOpen  = !body.hidden;
+
+  body.hidden = isOpen;
+  btn.setAttribute('aria-expanded', String(!isOpen));
+  icon.className = isOpen ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+  article.classList.toggle('open', !isOpen);
+
+  if (!isOpen) {
+    setTimeout(() => article.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+  }
+}
+</script>
+</body>
+</html>
